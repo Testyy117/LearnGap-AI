@@ -1,0 +1,34 @@
+{
+  "placeholderImages": [
+    {
+      "id": "math-hero",
+      "description": "Mathematics subject illustration",
+      "imageUrl": "https://picsum.photos/seed/math/800/600",
+      "imageHint": "mathematics calculus"
+    },
+    {
+      "id": "physics-hero",
+      "description": "Physics subject illustration",
+      "imageUrl": "https://picsum.photos/seed/physics/800/600",
+      "imageHint": "physics science"
+    },
+    {
+      "id": "biology-hero",
+      "description": "Biology subject illustration",
+      "imageUrl": "https://picsum.photos/seed/biology/800/600",
+      "imageHint": "biology medicine"
+    },
+    {
+      "id": "chemistry-hero",
+      "description": "Chemistry subject illustration",
+      "imageUrl": "https://picsum.photos/seed/chemistry/800/600",
+      "imageHint": "chemistry lab"
+    },
+    {
+      "id": "student-avatar",
+      "description": "Student profile picture",
+      "imageUrl": "https://picsum.photos/seed/student/200/200",
+      "imageHint": "student portrait"
+    }
+  ]
+}
