@@ -1,7 +1,6 @@
 'use server';
 /**
- * @fileOverview This file implements an AI flow to analyze student quiz performance and confidence scores
- * to identify learning gaps and misconceptions.
+ * @fileOverview This file implements a mocked AI flow to analyze student quiz performance.
  *
  * - analyzeLearningGap - A function that handles the learning gap analysis process.
  * - AnalyzeLearningGapInput - The input type for the analyzeLearningGap function.
@@ -84,32 +83,6 @@ export async function analyzeLearningGap(
   return analyzeLearningGapFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'analyzeLearningGapPrompt',
-  input: { schema: AnalyzeLearningGapInputSchema },
-  output: { schema: AnalyzeLearningGapOutputSchema },
-  prompt: `You are an expert educational AI designed to analyze student quiz results and confidence levels to identify learning gaps and misconceptions.
-
-Your task is to review the provided quiz results, calculate accuracy and average confidence for each topic, and identify specific learning gaps and misconceptions. Pay special attention to areas where the student has low accuracy but high confidence, as these often indicate misconceptions.
-
-Provide a detailed analysis in the specified JSON format, including an overall insight, a summary for pie chart visualization, and a list of specific detected gaps with recommendations.
-
---- Quiz Results ---
-{{#each quizResults}}
-Question ID: {{{questionId}}}
-Question: {{{questionText}}}
-Correct Answer: {{{correctAnswer}}}
-Student Answer: {{{studentAnswer}}}
-Is Correct: {{{isCorrect}}}
-Confidence Level: {{{confidenceLevel}}}
-Subject: {{{subject}}}
-Topic: {{{topic}}}
----
-{{/each}}
-
-Based on the above data, analyze the student's performance and provide your output in the following JSON format. Ensure all numerical values are calculated accurately and boolean flags like 'isMisconception' are correctly set based on your analysis (e.g., isMisconception=true if accuracy is low and confidence is high for a topic).`,
-});
-
 const analyzeLearningGapFlow = ai.defineFlow(
   {
     name: 'analyzeLearningGapFlow',
@@ -117,10 +90,40 @@ const analyzeLearningGapFlow = ai.defineFlow(
     outputSchema: AnalyzeLearningGapOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input);
-    if (!output) {
-      throw new Error('AI did not return a valid output for learning gap analysis.');
-    }
-    return output;
+    // Simulate processing
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Mock logic: Identify gaps based on input
+    const incorrectResults = input.quizResults.filter(r => !r.isCorrect);
+    const topicsWithErrors = Array.from(new Set(incorrectResults.map(r => r.topic)));
+    
+    const detectedGaps = topicsWithErrors.map(topic => {
+      const topicResults = input.quizResults.filter(r => r.topic === topic);
+      const accuracy = (topicResults.filter(r => r.isCorrect).length / topicResults.length) * 100;
+      const avgConfidence = topicResults.reduce((acc, curr) => acc + curr.confidenceLevel, 0) / topicResults.length;
+      
+      const isMisconception = accuracy < 50 && avgConfidence > 70;
+
+      return {
+        topic,
+        description: isMisconception 
+          ? `You show high confidence but low accuracy in ${topic}. This suggests a core misconception in how you apply these principles.`
+          : `You're struggling with foundational concepts in ${topic}. Your low confidence indicates you're aware of these gaps.`,
+        accuracy,
+        confidence: avgConfidence,
+        isMisconception,
+        recommendation: `Review the introductory modules for ${topic} and complete 5 targeted practice problems.`
+      };
+    });
+
+    return {
+      overallInsight: `You've completed the diagnostic. We found ${detectedGaps.length} areas for improvement, with a focus on ${topicsWithErrors[0] || 'fundamental principles'}.`,
+      gapSummary: {
+        totalGaps: detectedGaps.length,
+        topicsWithGaps: topicsWithErrors,
+        misconceptionCount: detectedGaps.filter(g => g.isMisconception).length,
+      },
+      detectedGaps,
+    };
   }
 );

@@ -103,9 +103,11 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            <Button className="w-full bg-primary hover:bg-primary/90 h-12 text-base font-bold shadow-lg shadow-primary/20 gap-2 mt-2">
-              Start Learning Free <Rocket className="h-5 w-5" />
-            </Button>
+            <Link href="/dashboard" className="w-full">
+              <Button className="w-full bg-primary hover:bg-primary/90 h-12 text-base font-bold shadow-lg shadow-primary/20 gap-2 mt-2">
+                Start Learning Free <Rocket className="h-5 w-5" />
+              </Button>
+            </Link>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
             <div className="text-center text-xs text-muted-foreground">

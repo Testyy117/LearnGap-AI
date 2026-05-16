@@ -1,6 +1,6 @@
 'use server';
 /**
- * @fileOverview This file implements a Genkit flow for generating an AI-prioritized study plan.
+ * @fileOverview This file implements a mocked Genkit flow for generating an AI-prioritized study plan.
  *
  * - aiPrioritizedStudyPlan - A function that generates a study plan based on learning gaps.
  * - AiPrioritizedStudyPlanInput - The input type for the aiPrioritizedStudyPlan function.
@@ -51,47 +51,6 @@ export async function aiPrioritizedStudyPlan(
   return aiPrioritizedStudyPlanFlow(input);
 }
 
-const aiPrioritizedStudyPlanPrompt = ai.definePrompt({
-  name: 'aiPrioritizedStudyPlanPrompt',
-  input: {schema: AiPrioritizedStudyPlanInputSchema},
-  output: {schema: AiPrioritizedStudyPlanOutputSchema},
-  prompt: `You are an expert educational AI assistant tasked with creating personalized study plans.
-Your goal is to analyze a student's identified learning gaps and generate a prioritized study plan, assigning an urgency level (High, Moderate, Low) to each topic.
-
-Prioritize topics based on the following criteria:
-1.  **High Urgency**:
-    *   Topics where accuracy is very low (e.g., below 50%) regardless of confidence.
-    *   Topics where accuracy is low (e.g., below 70%) but confidence is high (indicating a misconception).
-    *   Topics with detailed misconception descriptions.
-2.  **Moderate Urgency**:
-    *   Topics where accuracy is moderate (e.g., 70-85%) and confidence is also moderate.
-    *   Topics that are foundational for other areas.
-3.  **Low Urgency**:
-    *   Topics where accuracy is relatively high (e.g., above 85%) but still show some room for improvement.
-    *   Topics where both accuracy and confidence are already high, but a quick review could be beneficial.
-
-For each topic, provide a specific recommendation for study activities. Explain your reasoning for the urgency and recommendation.
-
-Student's learning gaps:
-{{#if learningGaps}}
-{{#each learningGaps}}
-Topic: {{{topic}}}
-Accuracy: {{{accuracy}}}%
-Confidence: {{{confidence}}}%
-{{#if misconceptionDetail}}Misconception Detail: {{{misconceptionDetail}}}{{/if}}
----
-{{/each}}
-{{else}}
-No specific learning gaps provided. Focus on general study strategies.
-{{/if}}
-
-{{#if studentContext}}
-Additional student context: {{{studentContext}}}
-{{/if}}
-
-Generate the study plan in a structured JSON format, following the provided output schema.`,
-});
-
 const aiPrioritizedStudyPlanFlow = ai.defineFlow(
   {
     name: 'aiPrioritizedStudyPlanFlow',
@@ -99,7 +58,34 @@ const aiPrioritizedStudyPlanFlow = ai.defineFlow(
     outputSchema: AiPrioritizedStudyPlanOutputSchema,
   },
   async input => {
-    const {output} = await aiPrioritizedStudyPlanPrompt(input);
-    return output!;
+    // Simulate generation delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    const studyPlan = input.learningGaps.map(gap => ({
+      topic: gap.topic,
+      urgency: gap.accuracy < 40 ? 'High' : gap.accuracy < 70 ? 'Moderate' : 'Low' as any,
+      recommendation: `Complete 3 advanced simulations and review the 'Common Pitfalls' guide for ${gap.topic}.`,
+      reasoning: gap.accuracy < 40 
+        ? `Your accuracy is significantly below target, making this a critical area to address before your next assessment.`
+        : `Steady progress detected, but minor misconceptions are still impacting your overall performance.`
+    }));
+
+    // If no gaps, provide a default plan
+    if (studyPlan.length === 0) {
+      studyPlan.push({
+        topic: "General Subject Review",
+        urgency: "Moderate",
+        recommendation: "Take a full-length mock exam to identify potential hidden gaps.",
+        reasoning: "Maintaining overall subject fluency is key to long-term retention."
+      });
+    }
+
+    return {
+      studyPlan: studyPlan.sort((a, b) => {
+        const order = { 'High': 0, 'Moderate': 1, 'Low': 2 };
+        return order[a.urgency] - order[b.urgency];
+      }),
+      overallInsight: "Based on your recent performance, we've prioritized topics where accuracy is lowest to maximize your mastery gains this week."
+    };
   }
 );
