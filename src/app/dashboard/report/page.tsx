@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { 
   BarChart, 
@@ -8,8 +9,7 @@ import {
   YAxis, 
   CartesianGrid, 
   Tooltip, 
-  ResponsiveContainer, 
-  Cell 
+  ResponsiveContainer 
 } from 'recharts';
 import { 
   Calendar, 
@@ -29,14 +29,19 @@ const monthlyData = [
   { month: 'Jun', performance: 89, goal: 80 },
 ];
 
-const COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(var(--destructive))', '#A855F7', '#EAB308'];
-
 export default function PerformanceReportPage() {
-  // Simple heatmap data: 5 rows (weekdays) x 7 columns (days) for demo
-  const heatmapDays = Array.from({ length: 35 }, (_, i) => ({
-    id: i,
-    intensity: Math.floor(Math.random() * 5)
-  }));
+  const [heatmapDays, setHeatmapDays] = React.useState<{id: number, intensity: number}[]>([]);
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+    // Move random data generation to useEffect to avoid hydration mismatch
+    const days = Array.from({ length: 35 }, (_, i) => ({
+      id: i,
+      intensity: Math.floor(Math.random() * 5)
+    }));
+    setHeatmapDays(days);
+  }, []);
 
   const getIntensityColor = (level: number) => {
     switch (level) {
@@ -96,12 +101,14 @@ export default function PerformanceReportPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-7 gap-1.5">
-                {heatmapDays.map((day) => (
+                {mounted ? heatmapDays.map((day) => (
                   <div 
                     key={day.id} 
                     className={`aspect-square rounded-sm ${getIntensityColor(day.intensity)} transition-all hover:scale-110 cursor-help`}
                     title={`Day ${day.id + 1}: Level ${day.intensity}`}
                   />
+                )) : Array.from({ length: 35 }).map((_, i) => (
+                   <div key={i} className="aspect-square rounded-sm bg-secondary/20" />
                 ))}
               </div>
               <div className="mt-4 flex items-center justify-end gap-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">

@@ -10,7 +10,6 @@ import {
   User, 
   Sparkles, 
   BrainCircuit, 
-  Info,
   Trash2,
   Share2
 } from "lucide-react";
@@ -25,17 +24,23 @@ type Message = {
 };
 
 export default function LearnBotPage() {
-  const [messages, setMessages] = React.useState<Message[]>([
-    {
-      role: 'assistant',
-      content: "Hello! I'm LearnBot, your AI tutor. I can help you clarify difficult concepts, solve problems, or prepare for exams. What's on your mind today?",
-      timestamp: new Date()
-    }
-  ]);
+  const [messages, setMessages] = React.useState<Message[]>([]);
   const [input, setInput] = React.useState("");
   const [isLoading, setIsLoading] = React.useState(false);
+  const [mounted, setMounted] = React.useState(false);
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  React.useEffect(() => {
+    setMounted(true);
+    setMessages([
+      {
+        role: 'assistant',
+        content: "Hello! I'm LearnBot, your AI tutor. I can help you clarify difficult concepts, solve problems, or prepare for exams. What's on your mind today?",
+        timestamp: new Date()
+      }
+    ]);
+  }, []);
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
@@ -122,7 +127,7 @@ export default function LearnBotPage() {
                       {msg.content}
                     </div>
                     <span className="text-[10px] text-muted-foreground font-mono">
-                      {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {mounted ? msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}
                     </span>
                   </div>
                 </div>
