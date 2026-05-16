@@ -23,8 +23,8 @@ export default function LandingPage() {
             <Link href="/dashboard">
               <Button variant="ghost" className="hidden sm:flex">Log In</Button>
             </Link>
-            <Link href="/dashboard">
-              <Button className="bg-primary hover:bg-primary/90">Get Started</Button>
+            <Link href="/register">
+              <Button className="bg-primary hover:bg-primary/90">Sign Up</Button>
             </Link>
           </div>
         </div>
@@ -46,9 +46,9 @@ export default function LandingPage() {
               LearnGap AI analyzes your quiz performance and confidence scores to pinpoint misconceptions and build a personalized path to mastery.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/dashboard">
+              <Link href="/register">
                 <Button size="lg" className="h-14 px-8 text-base font-semibold bg-primary hover:bg-primary/90 group">
-                  Start Learning Now
+                  Start Your Journey
                   <ChevronRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
