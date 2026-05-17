@@ -10,6 +10,12 @@ To share your application with the world:
 2. **Click Deploy**: The platform will automatically build your Next.js application and deploy it to a secure, live URL.
 3. **Copy your URL**: Once the deployment is finished, the live web URL will be displayed in the interface for you to copy and share.
 
+### 📱 Using a Mobile Device?
+If you are on a mobile device and can't see the full interface, try:
+- Toggling the sidebar menu (look for a hamburger icon ≡).
+- Rotating your screen to landscape mode to reveal hidden header buttons.
+- Accessing the "Project Actions" or "Tools" menu where the **Deploy** button is located.
+
 ## ✨ Features
 
 - **Diagnostic Quizzes**: Smart quizzes that track both accuracy and self-reported confidence.
