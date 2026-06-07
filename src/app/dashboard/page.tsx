@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
+import { UserName as UserNameDisplay } from "./user-name";
+
 
 import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -56,7 +57,7 @@ export default function StudentDashboard() {
       {/* Welcome & AI Quick Insight */}
       <div className="grid md:grid-cols-3 gap-6">
         <div className="md:col-span-2 space-y-2">
-          <h1 className="text-3xl font-headline font-bold">Welcome back, {userName}.</h1>
+          <h1 className="text-3xl font-headline font-bold">Welcome back, <UserNameDisplay />.</h1>
           <p className="text-muted-foreground">You've completed 85% of your weekly goals. Ready to tackle those learning gaps?</p>
         </div>
         <div className="bg-primary/10 border border-primary/20 rounded-2xl p-4 flex items-start gap-4 animate-in fade-in slide-in-from-right-4 duration-500">
