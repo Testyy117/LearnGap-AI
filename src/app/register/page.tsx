@@ -1,4 +1,6 @@
-'use client';
+import { auth, db } from '@/Firebase';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -12,17 +14,36 @@ export default function RegisterPage() {
   const [grade, setGrade] = useState('');
   const [error, setError] = useState('');
 
-  const handleSubmit = () => {
-    if (!fullName || !email || !password || !grade) {
-      setError('Please fill in all fields');
-      return;
-    }
-    localStorage.setItem('userName', fullName);
-    localStorage.setItem('userEmail', email);
-    localStorage.setItem('userGrade', grade);
-    localStorage.setItem('isLoggedIn', 'true');
+  const handleSubmit = async () => {
+  if (!fullName || !email || !password || !grade) {
+    setError('Please fill in all fields');
+    return;
+  }
+
+  try {
+    // 1. Create user in Firebase Auth
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+
+    // 2. Set their display name
+    await updateProfile(user, { displayName: fullName });
+
+    // 3. Save extra info to Firestore
+    await setDoc(doc(db, "users", user.uid), {
+      uid: user.uid,
+      fullName: fullName,
+      email: email,
+      grade: grade,
+      createdAt: new Date()
+    });
+
+    // 4. Go to dashboard
     router.push('/dashboard');
-  };
+
+  } catch (err: any) {
+    setError(err.message);
+  }
+};
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
