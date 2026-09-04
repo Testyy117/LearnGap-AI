@@ -1,29 +1,8 @@
-          "use client";
-import { auth } from '@/Firebase';
-import { signOut } from 'firebase/auth';
-import { useRouter } from 'next/navigation';
-
-export default function SettingsPage() {
-  const router = useRouter();
-
-  const handleLogout = async () => {
-    await signOut(auth);
-    router.push('/login');
-  };
-
+          export default function HomePage() {
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Settings</h1>
-      
-      <div className="space-y-4">
-        <button className="w-full p-3 bg-gray-200 rounded">Profile</button>
-        <button className="w-full p-3 bg-gray-200 rounded">Notifications</button>
-        <button 
-          onClick={handleLogout}
-          className="w-full p-3 bg-red-500 text-white rounded">
-          Logout
-        </button>
-      </div>
+      <h1 className="text-3xl font-bold">LearnGap-AI</h1>
+      <p className="mt-2">Login to start fixing your learning gaps</p>
     </div>
   );
 }
