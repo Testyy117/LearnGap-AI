@@ -2,8 +2,9 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { 
+import { usePathname, useRouter } from "next/navigation";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "../../../Firebase";
   Sidebar, 
   SidebarContent, 
   SidebarFooter, 
@@ -39,7 +40,17 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = React.useState(false);
   const pathname = usePathname();
+const router = useRouter();
 
+React.useEffect(() => {
+  const unsubscribe = onAuthStateChanged(auth, (user) => {
+    if (!user) {
+      router.push("/login");
+    }
+  });
+
+  return () => unsubscribe();
+}, [router]);
   const studentNav = [
     { name: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
     { name: "Subjects", icon: BookOpen, href: "/dashboard/subjects" },
