@@ -1,6 +1,7 @@
+"use client";
 import { auth, db } from '@/Firebase';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';'use client';
+import { doc, setDoc } from 'firebase/firestore';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
