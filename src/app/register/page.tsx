@@ -1,5 +1,5 @@
 "use client";
-import { auth } from "../../../lib/Firebase";
+Use path alias for login page Firebase import
 
 
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
@@ -27,7 +27,6 @@ export default function RegisterPage() {
     // 1. Create user in Firebase Auth
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
-
     // 2. Set their display name
     await updateProfile(user, { displayName: fullName });
 
