@@ -1,5 +1,4 @@
 "use client";
-Use path alias for login page Firebase import
 
 
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
