@@ -1,11 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { signInWithEmailAndPassword } from "firebase/auth"; 
-import { auth } from "@/lib/firebase";
-
-
-
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/Firebase";          // ← corrected path
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
