@@ -1,63 +1,20 @@
 "use client";
 
-import * as React from "react";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { onAuthStateChanged } from "firebase/auth";
+    import * as React from "react";
+    import Link from "next/link";
+    import { onAuthStateChanged, signOut, type User } from "firebase/auth";
+    import { usePathname, useRouter } from "next/navigation";
+    import { BookOpen, Calendar, FileText, GraduationCap, LayoutDashboard, Loader2, LogOut, MessageSquare, Settings, ShieldCheck, Target, Trophy, TrendingUp, BrainCircuit } from "lucide-react";
 
-import { auth } from "@/lib/firebase";
+    import { auth } from "@/lib/firebase";
+    import { getUserProfile, isAdminUser, type UserProfile } from "@/lib/user-profile";
+    import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+    import { Button } from "@/components/ui/button";
+    import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarSeparator, SidebarTrigger } from "@/components/ui/sidebar";
 
+    type NavItem = { name: string; icon: React.ComponentType<{ className?: string }>; href: string };
 
-
-
-import { 
-  Sidebar, 
-  SidebarContent, 
-  SidebarFooter, 
-  SidebarHeader, 
-  SidebarMenu, 
-  SidebarMenuItem, 
-  SidebarMenuButton, 
-  SidebarProvider,
-  SidebarTrigger,
-  SidebarInset,
-  SidebarSeparator
-} from "@/components/ui/sidebar";
-import { 
-  LayoutDashboard, 
-  BookOpen, 
-  Target, 
-  Calendar, 
-  FileText, 
-  TrendingUp, 
-  Trophy, 
-  MessageSquare, 
-  Settings, 
-  UserCircle,
-  ShieldCheck,
-  BrainCircuit,
-  LogOut,
-  ChevronRight,
-  GraduationCap
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const [isAdmin, setIsAdmin] = React.useState(false);
-  const pathname = usePathname();
-const router = useRouter();
-
-React.useEffect(() => {
-  const unsubscribe = onAuthStateChanged(auth, (user) => {
-    if (!user) {
-      router.push("/login");
-    }
-  });
-
-  return () => unsubscribe();
-}, [router]);
-  const studentNav = [
+    const studentNav: NavItem[] = [
     { name: "Dashboard", icon: LayoutDashboard, href: "/dashboard" },
     { name: "Subjects", icon: BookOpen, href: "/dashboard/subjects" },
     { name: "Gap Analysis", icon: Target, href: "/dashboard/analysis" },
@@ -66,143 +23,81 @@ React.useEffect(() => {
     { name: "Progress", icon: TrendingUp, href: "/dashboard/report" },
     { name: "Achievements", icon: Trophy, href: "/dashboard/achievements" },
     { name: "LearnBot", icon: MessageSquare, href: "/dashboard/chat" },
-  ];
+    ];
 
-  const adminNav = [
+    const adminNav: NavItem[] = [
     { name: "Admin Home", icon: ShieldCheck, href: "/dashboard/admin" },
     { name: "Manage Questions", icon: FileText, href: "/dashboard/admin/questions" },
-    { name: "Platform Analytics", icon: TrendingUp, href: "/dashboard/admin/analytics" },
-    { name: "System Settings", icon: Settings, href: "/dashboard/admin/settings" },
-  ];
+    ];
 
-  const currentNav = isAdmin ? adminNav : studentNav;
+    function initials(name: string) {
+    return name.split(" ").filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("") || "L";
+    }
 
-  return (
-    <SidebarProvider defaultOpen={true}>
-      <div className="flex min-h-screen bg-background w-full">
-        <Sidebar className="border-r border-sidebar-border shadow-2xl">
-          <SidebarHeader className="p-4">
-            <div className="flex items-center gap-3 px-2">
-              <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
-                <BrainCircuit className="text-white h-5 w-5" />
-              </div>
-              <div className="flex flex-col">
-                <span className="font-headline font-bold text-foreground leading-tight">LearnGap AI</span>
-                <span className="text-[10px] text-primary font-bold uppercase tracking-widest">{isAdmin ? "Admin Console" : "Student Hub"}</span>
-              </div>
-            </div>
-          </SidebarHeader>
-          
-          <SidebarSeparator className="opacity-50" />
+    export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+    const pathname = usePathname();
+    const router = useRouter();
+    const [currentUser, setCurrentUser] = React.useState<User | null>(null);
+    const [profile, setProfile] = React.useState<UserProfile | null>(null);
+    const [loading, setLoading] = React.useState(true);
 
-          <SidebarContent className="px-2 py-4">
-            <SidebarMenu>
-              {currentNav.map((item) => (
-                <SidebarMenuItem key={item.name}>
-                  <SidebarMenuButton 
-                    asChild 
-                    isActive={pathname === item.href}
-                    tooltip={item.name}
-                    className={`transition-all duration-200 group h-11 ${
-                      pathname === item.href 
-                      ? "bg-primary/10 text-primary font-semibold" 
-                      : "hover:bg-sidebar-accent hover:text-foreground"
-                    }`}
-                  >
-                    <Link href={item.href} className="flex items-center gap-3">
-                      <item.icon className={`h-5 w-5 ${pathname === item.href ? "text-primary" : "text-muted-foreground group-hover:text-primary"}`} />
-                      <span className="text-sm">{item.name}</span>
-                      {pathname === item.href && (
-                        <div className="ml-auto w-1 h-4 bg-primary rounded-full" />
-                      )}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarContent>
+    React.useEffect(() => {
+      let cancelled = false;
+      const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        if (!user) {
+          if (!cancelled) { setCurrentUser(null); setProfile(null); setLoading(false); }
+          router.replace("/login");
+          return;
+        }
 
-          <SidebarFooter className="p-4 mt-auto">
-            <div className="space-y-4">
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild className="h-11">
-                    <Link href="/dashboard/settings" className="flex items-center gap-3">
-                      <Settings className="h-5 w-5 text-muted-foreground" />
-                      <span className="text-sm">Settings</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                
-                <SidebarMenuItem>
-                  <Button 
-                    variant="ghost" 
-                    className="w-full justify-start h-11 px-2 gap-3 hover:bg-destructive/10 hover:text-destructive group"
-                  >
-                    <LogOut className="h-5 w-5 text-muted-foreground group-hover:text-destructive" />
-                    <span className="text-sm">Sign Out</span>
-                  </Button>
-                </SidebarMenuItem>
-              </SidebarMenu>
+        setCurrentUser(user);
+        setLoading(true);
+        try {
+          const nextProfile = await getUserProfile(user);
+          if (!cancelled) { setProfile(nextProfile); setLoading(false); }
+        } catch {
+          if (!cancelled) {
+            setProfile({ uid: user.uid, displayName: user.displayName ?? undefined, email: user.email ?? undefined, photoURL: user.photoURL ?? undefined });
+            setLoading(false);
+          }
+        }
+      });
+      return () => { cancelled = true; unsubscribe(); };
+    }, [router]);
 
-              <SidebarSeparator />
+    if (loading || !currentUser || !profile) {
+      return <div className="flex min-h-screen items-center justify-center bg-background text-foreground"><div className="flex items-center gap-3 text-sm text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin text-primary" />Loading your learning workspace…</div></div>;
+    }
 
-              <div className="bg-secondary/40 rounded-xl p-3 border">
-                <div className="flex items-center gap-3 mb-3">
-                  <Avatar className="h-9 w-9 border-2 border-primary/20">
-                    <AvatarImage src="https://picsum.photos/seed/alex/100/100" />
-                    <AvatarFallback>AS</AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-sm font-semibold truncate">Alex Sterling</span>
-                    <span className="text-[10px] text-muted-foreground truncate">alex.s@university.edu</span>
-                  </div>
-                </div>
-                <Button 
-                  onClick={() => setIsAdmin(!isAdmin)}
-                  className={`w-full h-8 text-[11px] font-bold uppercase tracking-tight gap-1.5 transition-all shadow-sm ${
-                    isAdmin 
-                    ? "bg-primary text-primary-foreground hover:bg-primary/90" 
-                    : "bg-sidebar-accent border border-primary/20 hover:border-primary/50"
-                  }`}
-                  variant="outline"
-                >
-                  <ShieldCheck className="h-3.5 w-3.5" />
-                  {isAdmin ? "Switch to Student View" : "Switch to Admin View"}
-                </Button>
-              </div>
-            </div>
-          </SidebarFooter>
-        </Sidebar>
+    const isAdmin = isAdminUser(currentUser, profile);
+    const displayName = profile.displayName || currentUser.displayName || "Learner";
+    const email = profile.email || currentUser.email || "No email available";
+    const xp = profile.xp ?? 0;
+    const level = profile.level ?? 1;
 
-        <SidebarInset className="flex flex-col">
-          <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-md px-6">
-            <SidebarTrigger className="-ml-1" />
-            <SidebarSeparator orientation="vertical" className="h-4" />
-            <div className="flex-1">
-              <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-widest">
-                {pathname.split("/").pop()?.replace("-", " ") || "Dashboard"}
-              </h2>
-            </div>
-            <div className="flex items-center gap-4">
-               <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary border text-xs font-medium">
-                  <Trophy className="h-3.5 w-3.5 text-accent" />
-                  <span>2,450 XP</span>
-                  <SidebarSeparator orientation="vertical" className="h-3" />
-                  <GraduationCap className="h-3.5 w-3.5 text-primary" />
-                  <span>Level 12</span>
-               </div>
-               <Button size="icon" variant="ghost" className="relative">
-                 <div className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full animate-pulse" />
-                 <Target className="h-5 w-5" />
-               </Button>
-            </div>
-          </header>
-          <main className="flex-1 overflow-auto bg-background/50">
-            {children}
-          </main>
-        </SidebarInset>
-      </div>
-    </SidebarProvider>
-  );
-}
+    const renderNav = (items: NavItem[]) => (
+      <SidebarMenu>
+        {items.map((item) => {
+          const Icon = item.icon;
+          return <SidebarMenuItem key={item.href}><SidebarMenuButton asChild isActive={pathname === item.href} className="h-11"><Link href={item.href} className="flex items-center gap-3"><Icon className="h-5 w-5" /><span>{item.name}</span></Link></SidebarMenuButton></SidebarMenuItem>;
+        })}
+      </SidebarMenu>
+    );
+
+    return (
+      <SidebarProvider defaultOpen>
+        <div className="flex min-h-screen w-full bg-background">
+          <Sidebar className="border-r border-sidebar-border shadow-2xl">
+            <SidebarHeader className="p-4"><div className="flex items-center gap-3 px-2"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary shadow-lg shadow-primary/20"><BrainCircuit className="h-5 w-5 text-white" /></div><div className="flex flex-col"><span className="font-headline font-bold leading-tight text-foreground">LearnGap AI</span><span className="text-[10px] font-bold uppercase tracking-widest text-primary">{isAdmin ? "Admin Console" : "Student Hub"}</span></div></div></SidebarHeader>
+            <SidebarContent className="px-3 py-2">
+              {renderNav(studentNav)}
+              {isAdmin && <div className="mt-6 space-y-2"><p className="px-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Administration</p>{renderNav(adminNav)}</div>}
+            </SidebarContent>
+            <SidebarFooter className="p-4"><div className="space-y-4"><SidebarMenu><SidebarMenuItem><SidebarMenuButton asChild className="h-11"><Link href="/dashboard/settings" className="flex items-center gap-3"><Settings className="h-5 w-5 text-muted-foreground" /><span className="text-sm">Settings</span></Link></SidebarMenuButton></SidebarMenuItem><SidebarMenuItem><Button variant="ghost" className="h-11 w-full justify-start gap-3 px-2 hover:bg-destructive/10 hover:text-destructive" onClick={() => signOut(auth).then(() => router.replace("/login"))}><LogOut className="h-5 w-5" /><span className="text-sm">Sign Out</span></Button></SidebarMenuItem></SidebarMenu><SidebarSeparator /><div className="rounded-xl border bg-secondary/40 p-3"><div className="mb-3 flex items-center gap-3"><Avatar className="h-9 w-9 border-2 border-primary/20"><AvatarImage src={profile.photoURL} alt={displayName} /><AvatarFallback>{initials(displayName)}</AvatarFallback></Avatar><div className="flex min-w-0 flex-col"><span className="truncate text-sm font-semibold">{displayName}</span><span className="truncate text-[10px] text-muted-foreground">{email}</span></div></div>{isAdmin && <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-primary"><ShieldCheck className="h-3.5 w-3.5" />Authorized admin</div>}</div></div></SidebarFooter>
+          </Sidebar>
+          <SidebarInset className="flex flex-col"><header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-6 backdrop-blur-md"><SidebarTrigger className="-ml-1" /><SidebarSeparator orientation="vertical" className="h-4" /><div className="flex-1"><h2 className="text-sm font-medium uppercase tracking-widest text-muted-foreground">{pathname.split("/").pop()?.replace(/-/g, " ") || "Dashboard"}</h2></div><div className="hidden items-center gap-2 rounded-full border bg-secondary px-3 py-1.5 text-xs font-medium sm:flex"><Trophy className="h-3.5 w-3.5 text-accent" /><span>{xp.toLocaleString()} XP</span><SidebarSeparator orientation="vertical" className="h-3" /><GraduationCap className="h-3.5 w-3.5 text-primary" /><span>Level {level}</span></div></header><main className="flex-1 overflow-auto bg-background/50">{children}</main></SidebarInset>
+        </div>
+      </SidebarProvider>
+    );
+    }
+    
