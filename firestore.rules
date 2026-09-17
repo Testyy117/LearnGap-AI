@@ -23,13 +23,22 @@ rules_version = '2';
           signedIn()
           && request.auth.uid == userId
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            'displayName', 'fullName', 'name', 'email', 'photoURL', 'grade', 'xp', 'level'
+            'displayName', 'fullName', 'name', 'email', 'photoURL', 'grade', 'xp', 'level', 'updatedAt'
           ])
         );
         allow delete: if adminProfile();
+
+        match /subjects/{subjectId} {
+          allow read, write: if signedIn() && request.auth.uid == userId;
+        }
       }
 
       match /subjects/{subjectId} {
+        allow read: if signedIn();
+        allow write: if adminProfile();
+      }
+
+      match /questions/{questionId} {
         allow read: if signedIn();
         allow write: if adminProfile();
       }
