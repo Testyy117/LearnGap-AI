@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 
-import { auth } from "@/Firebase";
+import { auth } from "@/lib/firebase";
 
 
 
