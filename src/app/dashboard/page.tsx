@@ -8,7 +8,7 @@
 
     import { auth } from "@/lib/firebase";
     import { getSubjectsForUser, type SubjectRecord } from "@/lib/subjects";
-    import { getUserProfile, type UserProfile } from "@/lib/user-profile";
+    import { ensureUserProfile, type UserProfile } from "@/lib/user-profile";
     import { Badge } from "@/components/ui/badge";
     import { Button } from "@/components/ui/button";
     import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,7 +37,7 @@
         setLoading(true);
         setError("");
         try {
-          const results = await Promise.all([getUserProfile(user), getSubjectsForUser(user.uid)]);
+          const results = await Promise.all([ensureUserProfile(user), getSubjectsForUser(user.uid)]);
           if (!cancelled) { setProfile(results[0]); setSubjects(results[1]); }
         } catch {
           if (!cancelled) setError("We couldn’t load your dashboard data. Please refresh and try again.");
@@ -63,7 +63,7 @@
         <Card><CardContent className="flex items-center gap-4 p-5"><div className="rounded-xl bg-green-500/10 p-3 text-green-400"><Trophy className="h-5 w-5" /></div><div><p className="text-xs uppercase tracking-widest text-muted-foreground">Completed</p><p className="text-2xl font-bold">{completedSubjects}</p></div></CardContent></Card>
         <Card><CardContent className="flex items-center gap-4 p-5"><div className="rounded-xl bg-purple-500/10 p-3 text-purple-400"><Target className="h-5 w-5" /></div><div><p className="text-xs uppercase tracking-widest text-muted-foreground">XP</p><p className="text-2xl font-bold">{(profile?.xp ?? 0).toLocaleString()}</p></div></CardContent></Card>
       </div>
-      <Card><CardHeader className="flex flex-row items-center justify-between"><CardTitle>Subject progress</CardTitle><Link href="/dashboard/subjects" className="text-sm font-medium text-primary hover:underline">View all</Link></CardHeader><CardContent>{subjects.length === 0 ? <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">No subjects are available for this account yet.</div> : <div className="grid gap-4 md:grid-cols-2">{subjects.slice(0, 6).map((subject) => { const colors = colorClasses[subject.colorKey] ?? colorClasses.primary; return <Link key={subject.id} href={"/dashboard/quiz/" + subject.id} className="group rounded-xl border p-4 transition-colors hover:border-primary/50 hover:bg-secondary/20"><div className="mb-3 flex items-start justify-between gap-3"><div className="flex items-center gap-3"><div className={"rounded-lg p-2 " + colors.surface}><BookOpen className={"h-4 w-4 " + colors.text} /></div><div><h3 className="font-semibold group-hover:text-primary">{subject.name}</h3><p className="text-xs text-muted-foreground">{subject.status}</p></div></div><Badge variant="secondary">{subject.progress}%</Badge></div><Progress value={subject.progress} className="h-2" /></Link>; })}</div>}</CardContent></Card>
+      <Card><CardHeader className="flex flex-row items-center justify-between"><CardTitle>Subject progress</CardTitle><Link href="/dashboard/subjects" className="text-sm font-medium text-primary hover:underline">View all</Link></CardHeader><CardContent>{subjects.length === 0 ? <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">Welcome to LearnGap. Your starter subjects will appear here while your curriculum is being prepared.</div> : <div className="grid gap-4 md:grid-cols-2">{subjects.slice(0, 6).map((subject) => { const colors = colorClasses[subject.colorKey] ?? colorClasses.primary; return <Link key={subject.id} href={"/dashboard/quiz/" + subject.id} className="group rounded-xl border p-4 transition-colors hover:border-primary/50 hover:bg-secondary/20"><div className="mb-3 flex items-start justify-between gap-3"><div className="flex items-center gap-3"><div className={"rounded-lg p-2 " + colors.surface}><BookOpen className={"h-4 w-4 " + colors.text} /></div><div><h3 className="font-semibold group-hover:text-primary">{subject.name}</h3><p className="text-xs text-muted-foreground">{subject.status}</p></div></div><Badge variant="secondary">{subject.progress}%</Badge></div><Progress value={subject.progress} className="h-2" /></Link>; })}</div>}</CardContent></Card>
     </div>;
     }
     
