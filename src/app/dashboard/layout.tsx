@@ -4,7 +4,7 @@
     import Link from "next/link";
     import { onAuthStateChanged, signOut, type User } from "firebase/auth";
     import { usePathname, useRouter } from "next/navigation";
-    import { BookOpen, Calendar, FileText, GraduationCap, LayoutDashboard, Loader2, LogOut, MessageSquare, Settings, ShieldCheck, Target, Trophy, TrendingUp, BrainCircuit } from "lucide-react";
+    import { BookOpen, Calendar, FileText, GraduationCap, LayoutDashboard, LibraryBig, Loader2, LogOut, MessageSquare, Settings, ShieldCheck, Target, Trophy, TrendingUp, BrainCircuit } from "lucide-react";
 
     import { auth } from "@/lib/firebase";
     import { getUserProfile, isAdminUser, type UserProfile } from "@/lib/user-profile";
@@ -27,6 +27,7 @@
 
     const adminNav: NavItem[] = [
     { name: "Admin Home", icon: ShieldCheck, href: "/dashboard/admin" },
+  { name: "Curriculum", icon: LibraryBig, href: "/dashboard/admin/curriculum" },
     { name: "Manage Questions", icon: FileText, href: "/dashboard/admin/questions" },
     ];
 
