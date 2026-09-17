@@ -5,7 +5,7 @@
     import { useState, type FormEvent } from "react";
     import { signInWithEmailAndPassword } from "firebase/auth";
 
-    import { auth } from "@/Firebase";
+    import { auth } from "@/lib/firebase";
     import { Button } from "@/components/ui/button";
     import {
     Card,
