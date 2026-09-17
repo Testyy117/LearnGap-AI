@@ -1,4 +1,4 @@
-import { collection, getDocs } from "firebase/firestore";
+import { collection, doc, getDocs, serverTimestamp, writeBatch } from "firebase/firestore";
 
     import { db } from "@/lib/firebase";
 
@@ -15,6 +15,12 @@ import { collection, getDocs } from "firebase/firestore";
     colorKey: string;
     userId?: string;
     };
+
+    export const DEFAULT_STARTER_SUBJECTS = [
+    { id: "starter-mathematics", name: "Mathematics Foundations", description: "Build confidence with core numeracy, algebra, and problem-solving skills.", icon: "calculator", color: "blue", tags: ["Foundations", "Starter"], modules: 6 },
+    { id: "starter-science", name: "Science Foundations", description: "Explore the scientific method, evidence, and the world around you.", icon: "atom", color: "green", tags: ["Foundations", "Starter"], modules: 5 },
+    { id: "starter-study-skills", name: "Study Skills", description: "Learn practical habits for planning, recall, and focused independent learning.", icon: "book", color: "purple", tags: ["Skills", "Starter"], modules: 4 },
+    ] as const;
 
     function numberValue(value: unknown, fallback = 0) {
     if (typeof value === "number" && Number.isFinite(value)) return value;
@@ -49,9 +55,52 @@ import { collection, getDocs } from "firebase/firestore";
     };
     }
 
-    export async function getSubjectsForUser(uid: string) {
+    export async function getGlobalSubjects() {
     const snapshot = await getDocs(collection(db, "subjects"));
-    const allSubjects = snapshot.docs.map((subject) => normalizeSubject(subject.id, subject.data()));
-    return allSubjects.filter((subject) => !subject.userId || subject.userId === uid);
+    return snapshot.docs.map((subject) => normalizeSubject(subject.id, subject.data()));
+    }
+
+    async function seedStarterSubjects(uid: string) {
+    const batch = writeBatch(db);
+    DEFAULT_STARTER_SUBJECTS.forEach((subject) => {
+      batch.set(doc(db, "users", uid, "subjects", subject.id), {
+        ...subject,
+        userId: uid,
+        progress: 0,
+        completed: 0,
+        status: "Not started",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }, { merge: true });
+    });
+
+    try {
+      await batch.commit();
+      return DEFAULT_STARTER_SUBJECTS.map((subject) => normalizeSubject(subject.id, { ...subject, userId: uid, progress: 0, completed: 0, status: "Not started" }));
+    } catch {
+      return [];
+    }
+    }
+
+    export async function getSubjectsForUser(uid: string) {
+    const [globalResult, personalResult] = await Promise.allSettled([
+      getGlobalSubjects(),
+      getDocs(collection(db, "users", uid, "subjects")),
+    ]);
+    const globalSubjects = globalResult.status === "fulfilled" ? globalResult.value : [];
+    const personalSubjects = personalResult.status === "fulfilled"
+      ? personalResult.value.docs.map((subject) => normalizeSubject(subject.id, subject.data()))
+      : [];
+
+    if (globalSubjects.length === 0 && personalSubjects.length === 0) {
+      const seededSubjects = await seedStarterSubjects(uid);
+      return seededSubjects.length > 0
+        ? seededSubjects
+        : DEFAULT_STARTER_SUBJECTS.map((subject) => normalizeSubject(subject.id, { ...subject, userId: uid, progress: 0, completed: 0, status: "Not started" }));
+    }
+
+    const merged = new Map<string, SubjectRecord>();
+    [...globalSubjects, ...personalSubjects].forEach((subject) => merged.set(subject.id, subject));
+    return Array.from(merged.values());
     }
     
