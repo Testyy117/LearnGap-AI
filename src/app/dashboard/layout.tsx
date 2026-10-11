@@ -21,7 +21,6 @@
     { name: "Study Plan", icon: Calendar, href: "/dashboard/plan" },
     { name: "Resources", icon: FileText, href: "/dashboard/resources" },
     { name: "Progress", icon: TrendingUp, href: "/dashboard/report" },
-    { name: "Achievements", icon: Trophy, href: "/dashboard/achievements" },
     { name: "LearnBot", icon: MessageSquare, href: "/dashboard/chat" },
     ];
 
