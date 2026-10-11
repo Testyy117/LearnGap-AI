@@ -1,4 +1,4 @@
-import { addDoc, collection, doc, getDoc, getDocs, limit, orderBy, query, runTransaction, serverTimestamp, setDoc } from "firebase/firestore";
+import { addDoc, collection, doc, getDoc, getDocs, limit, orderBy, query, runTransaction, serverTimestamp, setDoc, where } from "firebase/firestore";
 
     import { db } from "@/lib/firebase";
     import { syncUserSubjects } from "@/lib/subjects";
@@ -50,7 +50,7 @@ import { addDoc, collection, doc, getDoc, getDocs, limit, orderBy, query, runTra
     }
 
     export async function getQuestionsForSubject(subjectId: string): Promise<QuizQuestion[]> {
-    const snapshot = await getDocs(query(collection(db, "questions"), orderBy("createdAt", "asc")));
+    const snapshot = await getDocs(query(collection(db, "questions"), where("subjectId", "==", subjectId)));
     return snapshot.docs
       .map((item) => ({ id: item.id, ...item.data() }))
       .filter((item) => item.subjectId === subjectId)
