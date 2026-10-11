@@ -14,6 +14,8 @@ import type { User } from "firebase/auth";
     isAdmin?: boolean;
     };
 
+    export type NewUserProfile = { fullName?: string; grade?: string };
+
     function firstString(...values: unknown[]) {
     return values.find((value): value is string => typeof value === "string" && value.trim().length > 0)?.trim();
     }
@@ -45,39 +47,29 @@ import type { User } from "firebase/auth";
     return profileFromData(user, snapshot.exists() ? snapshot.data() : {});
     }
 
-    export async function ensureUserProfile(user: User): Promise<UserProfile> {
-    const fallback = profileFromData(user, { xp: 0, level: 1 });
+    export async function ensureUserProfile(user: User, details: NewUserProfile = {}): Promise<UserProfile> {
+    const reference = doc(db, "users", user.uid);
+    const snapshot = await getDoc(reference);
+    if (snapshot.exists()) return profileFromData(user, snapshot.data());
 
-    try {
-      const reference = doc(db, "users", user.uid);
-      const snapshot = await getDoc(reference);
-      if (snapshot.exists()) return profileFromData(user, snapshot.data());
-
-      const initialData = {
-        uid: user.uid,
-        xp: 0,
-        level: 1,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        ...(fallback.displayName ? { displayName: fallback.displayName } : {}),
-        ...(fallback.email ? { email: fallback.email } : {}),
-        ...(fallback.photoURL ? { photoURL: fallback.photoURL } : {}),
-      };
-      await setDoc(reference, initialData);
-      return fallback;
-    } catch {
-      return fallback;
-    }
+    const fullName = firstString(details.fullName, user.displayName);
+    const email = firstString(user.email);
+    const data = {
+      uid: user.uid,
+      xp: 0,
+      level: 1,
+      ...(fullName ? { fullName, displayName: fullName } : {}),
+      ...(email ? { email } : {}),
+      ...(details.grade ? { grade: details.grade } : {}),
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    };
+    await setDoc(reference, data);
+    return profileFromData(user, data);
     }
 
     export function isAdminUser(user: User, profile: UserProfile) {
-    const configuredAdminUid = process.env.NEXT_PUBLIC_ADMIN_UID?.trim();
     const role = profile.role?.toLowerCase();
-    return Boolean(
-      (configuredAdminUid && user.uid === configuredAdminUid) ||
-        role === "admin" ||
-        role === "administrator" ||
-        profile.isAdmin === true,
-    );
+    return profile.uid === user.uid && (role === "admin" || role === "administrator");
     }
     
