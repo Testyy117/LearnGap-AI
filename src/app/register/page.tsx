@@ -5,8 +5,7 @@
     import { useRouter } from "next/navigation";
 
     import { auth } from "@/lib/firebase";
-    import { ensureUserProfile } from "@/lib/user-profile";
-    import { syncUserSubjects } from "@/lib/subjects";
+    import { initializeUserWorkspace } from "@/lib/user-workspace";
     import { Button } from "@/components/ui/button";
     import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -29,9 +28,16 @@
       setSaving(true);
       try {
         const credential = await createUserWithEmailAndPassword(auth, email.trim(), password);
-        await updateProfile(credential.user, { displayName: fullName.trim() });
-        await ensureUserProfile(credential.user, { fullName: fullName.trim(), grade });
-        await syncUserSubjects(credential.user.uid);
+        try {
+            await updateProfile(credential.user, { displayName: fullName.trim() });
+          } catch (profileError) {
+            console.warn("Auth display name update failed; Firestore profile setup will continue.", profileError);
+          }
+          try {
+            await initializeUserWorkspace(credential.user, { fullName: fullName.trim(), grade });
+          } catch (initializationError) {
+            console.warn("Workspace setup will retry in the dashboard.", initializationError);
+          }
         router.replace("/dashboard");
       } catch (error) {
         const code = typeof error === "object" && error && "code" in error ? String(error.code) : "";
