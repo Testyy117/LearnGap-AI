@@ -9,18 +9,14 @@ import { collection, doc, getDocs, serverTimestamp, writeBatch } from "firebase/
     progress: number;
     modules: number;
     completed: number;
+    bestScore: number;
+    lastScore?: number;
+    attemptCount: number;
     status: string;
     tags: string[];
     iconKey: string;
     colorKey: string;
-    userId?: string;
     };
-
-    export const DEFAULT_STARTER_SUBJECTS = [
-    { id: "starter-mathematics", name: "Mathematics Foundations", description: "Build confidence with core numeracy, algebra, and problem-solving skills.", icon: "calculator", color: "blue", tags: ["Foundations", "Starter"], modules: 6 },
-    { id: "starter-science", name: "Science Foundations", description: "Explore the scientific method, evidence, and the world around you.", icon: "atom", color: "green", tags: ["Foundations", "Starter"], modules: 5 },
-    { id: "starter-study-skills", name: "Study Skills", description: "Learn practical habits for planning, recall, and focused independent learning.", icon: "book", color: "purple", tags: ["Skills", "Starter"], modules: 4 },
-    ] as const;
 
     function numberValue(value: unknown, fallback = 0) {
     if (typeof value === "number" && Number.isFinite(value)) return value;
@@ -31,76 +27,74 @@ import { collection, doc, getDocs, serverTimestamp, writeBatch } from "firebase/
     return fallback;
     }
 
-    function normalizeSubject(id: string, data: Record<string, unknown>): SubjectRecord {
+    function normalizeGlobalSubject(id: string, data: Record<string, unknown>): SubjectRecord {
     const modules = Array.isArray(data.modules) ? data.modules.length : numberValue(data.modules ?? data.totalModules);
-    const completed = numberValue(data.completed ?? data.completedModules);
-    const rawProgress = numberValue(data.progress ?? data.mastery);
-    const progress = Math.max(0, Math.min(100, rawProgress || (modules > 0 ? (completed / modules) * 100 : 0)));
-    const status = typeof data.status === "string" && data.status.trim()
-      ? data.status
-      : progress >= 85 ? "Almost mastered" : progress >= 50 ? "In progress" : progress > 0 ? "Needs focus" : "Not started";
-
     return {
       id,
       name: typeof data.name === "string" ? data.name : typeof data.title === "string" ? data.title : "Untitled subject",
-      description: typeof data.description === "string" ? data.description : "Continue building your understanding of this subject.",
-      progress: Math.round(progress),
+      description: typeof data.description === "string" ? data.description : "",
+      progress: 0,
       modules: Math.max(0, Math.round(modules)),
-      completed: Math.max(0, Math.round(completed)),
-      status,
+      completed: 0,
+      bestScore: 0,
+      attemptCount: 0,
+      status: "Not started",
       tags: Array.isArray(data.tags) ? data.tags.filter((tag): tag is string => typeof tag === "string") : [],
       iconKey: typeof data.icon === "string" ? data.icon.toLowerCase() : "book",
       colorKey: typeof data.color === "string" ? data.color.toLowerCase() : "primary",
-      userId: typeof data.userId === "string" ? data.userId : typeof data.uid === "string" ? data.uid : undefined,
     };
     }
 
-    export async function getGlobalSubjects() {
+    export async function getGlobalSubjects(): Promise<SubjectRecord[]> {
     const snapshot = await getDocs(collection(db, "subjects"));
-    return snapshot.docs.map((subject) => normalizeSubject(subject.id, subject.data()));
+    return snapshot.docs.map((subject) => normalizeGlobalSubject(subject.id, subject.data()));
     }
 
-    async function seedStarterSubjects(uid: string) {
-    const batch = writeBatch(db);
-    DEFAULT_STARTER_SUBJECTS.forEach((subject) => {
-      batch.set(doc(db, "users", uid, "subjects", subject.id), {
-        ...subject,
-        userId: uid,
-        progress: 0,
-        completed: 0,
-        status: "Not started",
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      }, { merge: true });
-    });
-
-    try {
-      await batch.commit();
-      return DEFAULT_STARTER_SUBJECTS.map((subject) => normalizeSubject(subject.id, { ...subject, userId: uid, progress: 0, completed: 0, status: "Not started" }));
-    } catch {
-      return [];
-    }
-    }
-
-    export async function getSubjectsForUser(uid: string) {
-    const [globalResult, personalResult] = await Promise.allSettled([
+    export async function syncUserSubjects(uid: string): Promise<SubjectRecord[]> {
+    const [globalSubjects, savedSnapshot] = await Promise.all([
       getGlobalSubjects(),
       getDocs(collection(db, "users", uid, "subjects")),
     ]);
-    const globalSubjects = globalResult.status === "fulfilled" ? globalResult.value : [];
-    const personalSubjects = personalResult.status === "fulfilled"
-      ? personalResult.value.docs.map((subject) => normalizeSubject(subject.id, subject.data()))
-      : [];
+    const saved = new Map(savedSnapshot.docs.map((subject) => [subject.id, subject.data()]));
+    const missing = globalSubjects.filter((subject) => !saved.has(subject.id));
 
-    if (globalSubjects.length === 0 && personalSubjects.length === 0) {
-      const seededSubjects = await seedStarterSubjects(uid);
-      return seededSubjects.length > 0
-        ? seededSubjects
-        : DEFAULT_STARTER_SUBJECTS.map((subject) => normalizeSubject(subject.id, { ...subject, userId: uid, progress: 0, completed: 0, status: "Not started" }));
+    for (let offset = 0; offset < missing.length; offset += 400) {
+      const batch = writeBatch(db);
+      missing.slice(offset, offset + 400).forEach((subject) => {
+        batch.set(doc(db, "users", uid, "subjects", subject.id), {
+          subjectId: subject.id,
+          userId: uid,
+          name: subject.name,
+          modules: subject.modules,
+          progress: 0,
+          completed: 0,
+          bestScore: 0,
+          lastScore: null,
+          attemptCount: 0,
+          status: "Not started",
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+      });
+      await batch.commit();
     }
 
-    const merged = new Map<string, SubjectRecord>();
-    [...globalSubjects, ...personalSubjects].forEach((subject) => merged.set(subject.id, subject));
-    return Array.from(merged.values());
+    return globalSubjects.map((subject) => {
+      const state = saved.get(subject.id) ?? {};
+      const progress = Math.max(0, Math.min(100, numberValue(state.progress)));
+      return {
+        ...subject,
+        progress,
+        completed: Math.max(0, Math.round(numberValue(state.completed))),
+        bestScore: Math.max(0, Math.min(100, numberValue(state.bestScore))),
+        lastScore: typeof state.lastScore === "number" ? state.lastScore : undefined,
+        attemptCount: Math.max(0, Math.round(numberValue(state.attemptCount))),
+        status: typeof state.status === "string" ? state.status : progress > 0 ? "In progress" : "Not started",
+      };
+    });
+    }
+
+    export async function getSubjectsForUser(uid: string) {
+    return syncUserSubjects(uid);
     }
     
