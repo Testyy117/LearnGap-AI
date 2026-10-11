@@ -37,7 +37,7 @@ import type { User } from "firebase/auth";
       photoURL: firstString(user.photoURL, data.photoURL),
       xp: numericValue(data.xp) ?? 0,
       level: numericValue(data.level) ?? 1,
-      role: firstString(data.role)?.toLowerCase(),
+      role: firstString(data.role),
       isAdmin: data.isAdmin === true,
     };
     }
@@ -81,7 +81,8 @@ import type { User } from "firebase/auth";
     }
 
     export function isAdminUser(user: User, profile: UserProfile) {
-    const role = profile.role?.toLowerCase();
-    return profile.uid === user.uid && (role === "admin" || role === "administrator");
+    const role = profile.role?.trim();
+    const authorizedRoles = ["admin", "administrator", "Admin", "Administrator"];
+    return profile.uid === user.uid && Boolean(role && authorizedRoles.includes(role));
     }
     
