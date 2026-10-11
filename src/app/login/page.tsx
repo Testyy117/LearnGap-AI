@@ -6,6 +6,7 @@
     import { signInWithEmailAndPassword } from "firebase/auth";
 
     import { auth } from "@/lib/firebase";
+import { initializeUserWorkspace } from "@/lib/user-workspace";
     import { Button } from "@/components/ui/button";
     import {
     Card,
