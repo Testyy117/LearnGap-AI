@@ -7,7 +7,8 @@
     import { BookOpen, Calendar, FileText, GraduationCap, LayoutDashboard, LibraryBig, Loader2, LogOut, MessageSquare, ShieldCheck, Target, Trophy, TrendingUp, BrainCircuit } from "lucide-react";
 
     import { auth } from "@/lib/firebase";
-    import { ensureUserProfile, isAdminUser, type UserProfile } from "@/lib/user-profile";
+    import { isAdminUser, type UserProfile } from "@/lib/user-profile";
+import { initializeUserWorkspace } from "@/lib/user-workspace";
     import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
     import { Button } from "@/components/ui/button";
     import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarSeparator, SidebarTrigger } from "@/components/ui/sidebar";
@@ -53,8 +54,8 @@
         setCurrentUser(user);
         setLoading(true);
         try {
-          const nextProfile = await ensureUserProfile(user);
-          if (!cancelled) { setProfile(nextProfile); setLoading(false); }
+          const workspace = await initializeUserWorkspace(user);
+          if (!cancelled) { setProfile(workspace.profile); setLoading(false); }
         } catch {
           if (!cancelled) {
             setProfile({ uid: user.uid, displayName: user.displayName ?? undefined, email: user.email ?? undefined, photoURL: user.photoURL ?? undefined });
