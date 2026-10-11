@@ -7,8 +7,9 @@
     import { ArrowRight, BookOpen, Loader2, Target, TrendingUp, Trophy } from "lucide-react";
 
     import { auth } from "@/lib/firebase";
-    import { getSubjectsForUser, type SubjectRecord } from "@/lib/subjects";
-    import { ensureUserProfile, type UserProfile } from "@/lib/user-profile";
+    import type { SubjectRecord } from "@/lib/subjects";
+    import { initializeUserWorkspace } from "@/lib/user-workspace";
+    import type { UserProfile } from "@/lib/user-profile";
     import { Badge } from "@/components/ui/badge";
     import { Button } from "@/components/ui/button";
     import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,8 +39,12 @@
         setLoading(true);
         setError("");
         try {
-          const results = await Promise.all([ensureUserProfile(user), getSubjectsForUser(user.uid)]);
-          if (!cancelled) { setProfile(results[0]); setSubjects(results[1]); }
+          const workspace = await initializeUserWorkspace(user);
+            if (!cancelled) {
+              setProfile(workspace.profile);
+              setSubjects(workspace.subjects);
+              if (workspace.subjectError) setError("Your profile is ready, but Firestore could not return your curriculum. Check the deployed Firestore rules and retry.");
+            }
         } catch {
           if (!cancelled) setError("We couldn’t load your dashboard data. Please refresh and try again.");
         } finally {
