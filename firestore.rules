@@ -10,7 +10,7 @@ rules_version = '2';
         return signedIn()
           && exists(/databases/$(database)/documents/users/$(request.auth.uid))
           && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.keys().hasAny(['role'])
-          && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'administrator'];
+          && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'administrator', 'Admin', 'Administrator'];
       }
 
       match /users/{userId} {
