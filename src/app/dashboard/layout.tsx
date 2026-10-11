@@ -7,7 +7,6 @@
     import { BookOpen, Calendar, FileText, GraduationCap, LayoutDashboard, LibraryBig, Loader2, LogOut, MessageSquare, ShieldCheck, Target, Trophy, TrendingUp, BrainCircuit } from "lucide-react";
 
     import { auth } from "@/lib/firebase";
-import { syncUserSubjects } from "@/lib/subjects";
     import { ensureUserProfile, isAdminUser, type UserProfile } from "@/lib/user-profile";
     import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
     import { Button } from "@/components/ui/button";
@@ -56,7 +55,6 @@ import { syncUserSubjects } from "@/lib/subjects";
         setLoading(true);
         try {
           const nextProfile = await ensureUserProfile(user);
-        await syncUserSubjects(user.uid);
           if (!cancelled) { setProfile(nextProfile); setLoading(false); }
         } catch {
           if (!cancelled) {
