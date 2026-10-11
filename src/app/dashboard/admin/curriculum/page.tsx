@@ -27,18 +27,27 @@
     const [loadError, setLoadError] = useState("");
     const [form, setForm] = useState({ name: "", description: "", icon: "book", color: "primary", tags: "", modules: "5" });
 
-    const loadSubjects = async () => {
-      try { setSubjects(await getGlobalSubjects()); } catch { setSubjects([]); }
-      finally { setLoading(false); }
-    };
+    const loadSubjects = async (adminUid: string) => {
+        try {
+          setLoadError("");
+          setSubjects(await ensureStarterCurriculum(adminUid));
+        } catch {
+          setLoadError("Could not load or initialize the global curriculum. Verify your admin role and deployed Firestore rules.");
+        } finally {
+          setLoading(false);
+        }
+      };
 
-    useEffect(() => {
-      const unsubscribe = onAuthStateChanged(auth, (user) => setCurrentUser(user));
-      loadSubjects();
-      return unsubscribe;
-    }, []);
+      useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+          setCurrentUser(user);
+          if (user) void loadSubjects(user.uid);
+          else setLoading(false);
+        });
+        return unsubscribe;
+      }, []);
 
-    const handleSubmit = async () => {
+      const handleSubmit = async () => {
       if (!currentUser || !form.name.trim()) {
         toast({ title: "Add a subject name", description: "A name is required before saving curriculum.", variant: "destructive" });
         return;
