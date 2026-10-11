@@ -34,8 +34,14 @@ rules_version = '2';
             && request.auth.uid == userId
             && request.resource.data.subjectId == subjectId
             && request.resource.data.userId == userId
-            && request.resource.data.progress == 0
-            && request.resource.data.attemptCount == 0;
+              && request.resource.data.keys().hasOnly([
+                'subjectId', 'userId', 'name', 'modules', 'progress', 'completed', 'bestScore', 'lastScore', 'attemptCount', 'status', 'createdAt', 'updatedAt'
+              ])
+              && request.resource.data.progress == 0
+              && request.resource.data.completed == 0
+              && request.resource.data.bestScore == 0
+              && request.resource.data.attemptCount == 0
+              && request.resource.data.status == 'Not started';
           allow update: if signedIn()
             && request.auth.uid == userId
             && request.resource.data.subjectId == subjectId
