@@ -4,10 +4,11 @@
     import Link from "next/link";
     import { onAuthStateChanged, signOut, type User } from "firebase/auth";
     import { usePathname, useRouter } from "next/navigation";
-    import { BookOpen, Calendar, FileText, GraduationCap, LayoutDashboard, LibraryBig, Loader2, LogOut, MessageSquare, Settings, ShieldCheck, Target, Trophy, TrendingUp, BrainCircuit } from "lucide-react";
+    import { BookOpen, Calendar, FileText, GraduationCap, LayoutDashboard, LibraryBig, Loader2, LogOut, MessageSquare, ShieldCheck, Target, Trophy, TrendingUp, BrainCircuit } from "lucide-react";
 
     import { auth } from "@/lib/firebase";
-    import { getUserProfile, isAdminUser, type UserProfile } from "@/lib/user-profile";
+import { syncUserSubjects } from "@/lib/subjects";
+    import { ensureUserProfile, isAdminUser, type UserProfile } from "@/lib/user-profile";
     import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
     import { Button } from "@/components/ui/button";
     import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarInset, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarSeparator, SidebarTrigger } from "@/components/ui/sidebar";
@@ -54,7 +55,9 @@
         setCurrentUser(user);
         setLoading(true);
         try {
-          const nextProfile = await getUserProfile(user);
+          await ensureUserProfile(user);
+        await syncUserSubjects(user.uid);
+        const nextProfile = await ensureUserProfile(user);
           if (!cancelled) { setProfile(nextProfile); setLoading(false); }
         } catch {
           if (!cancelled) {
@@ -94,7 +97,7 @@
               {renderNav(studentNav)}
               {isAdmin && <div className="mt-6 space-y-2"><p className="px-3 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Administration</p>{renderNav(adminNav)}</div>}
             </SidebarContent>
-            <SidebarFooter className="p-4"><div className="space-y-4"><SidebarMenu><SidebarMenuItem><SidebarMenuButton asChild className="h-11"><Link href="/dashboard/settings" className="flex items-center gap-3"><Settings className="h-5 w-5 text-muted-foreground" /><span className="text-sm">Settings</span></Link></SidebarMenuButton></SidebarMenuItem><SidebarMenuItem><Button variant="ghost" className="h-11 w-full justify-start gap-3 px-2 hover:bg-destructive/10 hover:text-destructive" onClick={() => signOut(auth).then(() => router.replace("/login"))}><LogOut className="h-5 w-5" /><span className="text-sm">Sign Out</span></Button></SidebarMenuItem></SidebarMenu><SidebarSeparator /><div className="rounded-xl border bg-secondary/40 p-3"><div className="mb-3 flex items-center gap-3"><Avatar className="h-9 w-9 border-2 border-primary/20"><AvatarImage src={profile.photoURL} alt={displayName} /><AvatarFallback>{initials(displayName)}</AvatarFallback></Avatar><div className="flex min-w-0 flex-col"><span className="truncate text-sm font-semibold">{displayName}</span><span className="truncate text-[10px] text-muted-foreground">{email}</span></div></div>{isAdmin && <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-primary"><ShieldCheck className="h-3.5 w-3.5" />Authorized admin</div>}</div></div></SidebarFooter>
+            <SidebarFooter className="p-4"><div className="space-y-4"><SidebarMenu><SidebarMenuItem><Button variant="ghost" className="h-11 w-full justify-start gap-3 px-2 hover:bg-destructive/10 hover:text-destructive" onClick={() => signOut(auth).then(() => router.replace("/login"))}><LogOut className="h-5 w-5" /><span className="text-sm">Sign Out</span></Button></SidebarMenuItem></SidebarMenu><SidebarSeparator /><div className="rounded-xl border bg-secondary/40 p-3"><div className="mb-3 flex items-center gap-3"><Avatar className="h-9 w-9 border-2 border-primary/20"><AvatarImage src={profile.photoURL} alt={displayName} /><AvatarFallback>{initials(displayName)}</AvatarFallback></Avatar><div className="flex min-w-0 flex-col"><span className="truncate text-sm font-semibold">{displayName}</span><span className="truncate text-[10px] text-muted-foreground">{email}</span></div></div>{isAdmin && <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-primary"><ShieldCheck className="h-3.5 w-3.5" />Authorized admin</div>}</div></div></SidebarFooter>
           </Sidebar>
           <SidebarInset className="flex flex-col"><header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-6 backdrop-blur-md"><SidebarTrigger className="-ml-1" /><SidebarSeparator orientation="vertical" className="h-4" /><div className="flex-1"><h2 className="text-sm font-medium uppercase tracking-widest text-muted-foreground">{pathname.split("/").pop()?.replace(/-/g, " ") || "Dashboard"}</h2></div><div className="hidden items-center gap-2 rounded-full border bg-secondary px-3 py-1.5 text-xs font-medium sm:flex"><Trophy className="h-3.5 w-3.5 text-accent" /><span>{xp.toLocaleString()} XP</span><SidebarSeparator orientation="vertical" className="h-3" /><GraduationCap className="h-3.5 w-3.5 text-primary" /><span>Level {level}</span></div></header><main className="flex-1 overflow-auto bg-background/50">{children}</main></SidebarInset>
         </div>
