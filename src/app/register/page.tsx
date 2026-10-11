@@ -38,7 +38,7 @@
         if (code === "auth/email-already-in-use") {
           setError("An account already uses this email. Sign in instead.");
         } else if (auth.currentUser) {
-          setError("Your account exists, but setup could not finish. Open the dashboard to retry loading your profile and curriculum.");
+          router.replace("/dashboard");
         } else {
           setError("We could not create your account. Check your details and try again.");
         }
