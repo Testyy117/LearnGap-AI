@@ -7,17 +7,17 @@ rules_version = '2';
       }
 
       function adminProfile() {
-        let profile = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-        return signedIn() && (
-          (profile.keys().hasAny(['role']) && profile.role in ['admin', 'administrator']) ||
-          (profile.keys().hasAny(['isAdmin']) && profile.isAdmin == true)
-        );
+        return signedIn()
+          && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+          && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.keys().hasAny(['role'])
+          && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'administrator'];
       }
 
       match /users/{userId} {
         allow read: if signedIn() && (request.auth.uid == userId || adminProfile());
         allow create: if signedIn()
           && request.auth.uid == userId
+          && request.resource.data.uid == userId
           && !request.resource.data.keys().hasAny(['role', 'isAdmin']);
         allow update: if adminProfile() || (
           signedIn()
@@ -29,7 +29,46 @@ rules_version = '2';
         allow delete: if adminProfile();
 
         match /subjects/{subjectId} {
-          allow read, write: if signedIn() && request.auth.uid == userId;
+          allow read: if signedIn() && (request.auth.uid == userId || adminProfile());
+          allow create: if signedIn()
+            && request.auth.uid == userId
+            && request.resource.data.subjectId == subjectId
+            && request.resource.data.userId == userId
+            && request.resource.data.progress == 0
+            && request.resource.data.attemptCount == 0;
+          allow update: if signedIn()
+            && request.auth.uid == userId
+            && request.resource.data.subjectId == subjectId
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'progress', 'completed', 'bestScore', 'lastScore', 'attemptCount', 'status', 'lastAttemptAt', 'updatedAt'
+            ]);
+          allow delete: if adminProfile();
+        }
+
+        match /quizSessions/{subjectId} {
+          allow read, delete: if signedIn() && request.auth.uid == userId;
+          allow create, update: if signedIn()
+            && request.auth.uid == userId
+            && request.resource.data.subjectId == subjectId
+            && request.resource.data.keys().hasOnly([
+              'subjectId', 'currentIdx', 'answers', 'confidence', 'bookmarks', 'timeLeft', 'updatedAt'
+            ]);
+        }
+
+        match /quizAttempts/{attemptId} {
+          allow read: if signedIn() && (request.auth.uid == userId || adminProfile());
+          allow create: if signedIn()
+            && request.auth.uid == userId
+            && request.resource.data.subjectId is string
+            && exists(/databases/$(database)/documents/users/$(userId)/subjects/$(request.resource.data.subjectId))
+            && request.resource.data.score is int
+            && request.resource.data.score >= 0
+            && request.resource.data.score <= 100
+            && request.resource.data.responses is list
+            && request.resource.data.keys().hasOnly([
+              'subjectId', 'subjectName', 'score', 'correctCount', 'totalQuestions', 'durationSeconds', 'responses', 'analysis', 'createdAt'
+            ]);
+          allow update, delete: if adminProfile();
         }
       }
 
