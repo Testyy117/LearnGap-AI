@@ -27,7 +27,7 @@
       let cancelled = false;
       const unsubscribe = onAuthStateChanged(auth, async (user) => {
         if (!user) { router.replace("/login"); return; }
-        try { const nextSubjects = await getSubjectsForUser(user.uid); if (!cancelled) setSubjects(nextSubjects); } catch { if (!cancelled) setError("We couldn’t load your subjects. Please refresh and try again."); } finally { if (!cancelled) setLoading(false); }
+        try { const nextSubjects = await getSubjectsForUser(user.uid); if (!cancelled) { setError(""); setSubjects(nextSubjects); } } catch { if (!cancelled) setError("We couldn’t load your subjects. Please refresh and try again."); } finally { if (!cancelled) setLoading(false); }
       });
       return () => { cancelled = true; unsubscribe(); };
     }, [router, retryCount]);
