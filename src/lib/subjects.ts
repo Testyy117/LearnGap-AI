@@ -90,6 +90,25 @@ import { collection, doc, getDocs, serverTimestamp, writeBatch } from "firebase/
     return getGlobalSubjects();
     }
 
+    function normalizeSavedSubject(id: string, data: Record<string, unknown>): SubjectRecord {
+    const progress = Math.max(0, Math.min(100, numberValue(data.progress)));
+    return {
+      id,
+      name: typeof data.name === "string" ? data.name : typeof data.subjectName === "string" ? data.subjectName : "Saved subject",
+      description: typeof data.description === "string" ? data.description : "",
+      progress,
+      modules: Math.max(0, Math.round(numberValue(data.modules))),
+      completed: Math.max(0, Math.round(numberValue(data.completed))),
+      bestScore: Math.max(0, Math.min(100, numberValue(data.bestScore))),
+      lastScore: typeof data.lastScore === "number" ? data.lastScore : undefined,
+      attemptCount: Math.max(0, Math.round(numberValue(data.attemptCount))),
+      status: typeof data.status === "string" ? data.status : progress > 0 ? "In progress" : "Not started",
+      tags: Array.isArray(data.tags) ? data.tags.filter((tag): tag is string => typeof tag === "string") : [],
+      iconKey: typeof data.iconKey === "string" ? data.iconKey : "book",
+      colorKey: typeof data.colorKey === "string" ? data.colorKey : "primary",
+    };
+    }
+
     async function syncUserSubjectsOnce(uid: string): Promise<SubjectRecord[]> {
     const [globalSubjects, savedSnapshot] = await Promise.all([
       getGlobalSubjects(),
@@ -120,7 +139,8 @@ import { collection, doc, getDocs, serverTimestamp, writeBatch } from "firebase/
       await batch.commit();
     }
 
-    return curriculumSubjects.map((subject) => {
+    const activeIds = new Set(curriculumSubjects.map((subject) => subject.id));
+    const activeSubjects = curriculumSubjects.map((subject) => {
       const state = saved.get(subject.id) ?? {};
       const progress = Math.max(0, Math.min(100, numberValue(state.progress)));
       return {
@@ -133,6 +153,10 @@ import { collection, doc, getDocs, serverTimestamp, writeBatch } from "firebase/
         status: typeof state.status === "string" ? state.status : progress > 0 ? "In progress" : "Not started",
       };
     });
+    const preservedSubjects = savedSnapshot.docs
+      .filter((subject) => !activeIds.has(subject.id))
+      .map((subject) => normalizeSavedSubject(subject.id, subject.data()));
+    return [...activeSubjects, ...preservedSubjects];
     }
 
     export async function syncUserSubjects(uid: string): Promise<SubjectRecord[]> {
