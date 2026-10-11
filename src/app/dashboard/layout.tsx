@@ -55,9 +55,8 @@ import { syncUserSubjects } from "@/lib/subjects";
         setCurrentUser(user);
         setLoading(true);
         try {
-          await ensureUserProfile(user);
+          const nextProfile = await ensureUserProfile(user);
         await syncUserSubjects(user.uid);
-        const nextProfile = await ensureUserProfile(user);
           if (!cancelled) { setProfile(nextProfile); setLoading(false); }
         } catch {
           if (!cancelled) {
