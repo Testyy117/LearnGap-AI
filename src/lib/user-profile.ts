@@ -35,8 +35,8 @@ import type { User } from "firebase/auth";
       displayName: firstString(user.displayName, data.displayName, data.fullName, data.name),
       email: firstString(user.email, data.email),
       photoURL: firstString(user.photoURL, data.photoURL),
-      xp: numericValue(data.xp),
-      level: numericValue(data.level),
+      xp: numericValue(data.xp) ?? 0,
+      level: numericValue(data.level) ?? 1,
       role: firstString(data.role)?.toLowerCase(),
       isAdmin: data.isAdmin === true,
     };
@@ -50,22 +50,34 @@ import type { User } from "firebase/auth";
     export async function ensureUserProfile(user: User, details: NewUserProfile = {}): Promise<UserProfile> {
     const reference = doc(db, "users", user.uid);
     const snapshot = await getDoc(reference);
-    if (snapshot.exists()) return profileFromData(user, snapshot.data());
+    const stored = snapshot.exists() ? snapshot.data() : {};
+    const defaults: Record<string, unknown> = {};
+
+    if (!snapshot.exists()) {
+      defaults.uid = user.uid;
+      defaults.xp = 0;
+      defaults.level = 1;
+      defaults.createdAt = serverTimestamp();
+    } else {
+      if (numericValue(stored.xp) === undefined) defaults.xp = 0;
+      if (numericValue(stored.level) === undefined) defaults.level = 1;
+    }
 
     const fullName = firstString(details.fullName, user.displayName);
     const email = firstString(user.email);
-    const data = {
-      uid: user.uid,
-      xp: 0,
-      level: 1,
-      ...(fullName ? { fullName, displayName: fullName } : {}),
-      ...(email ? { email } : {}),
-      ...(details.grade ? { grade: details.grade } : {}),
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    };
-    await setDoc(reference, data);
-    return profileFromData(user, data);
+    if (fullName && !firstString(stored.displayName, stored.fullName, stored.name)) {
+      defaults.fullName = fullName;
+      defaults.displayName = fullName;
+    }
+    if (email && !firstString(stored.email)) defaults.email = email;
+    if (details.grade && !firstString(stored.grade)) defaults.grade = details.grade;
+
+    if (Object.keys(defaults).length > 0) {
+      defaults.updatedAt = serverTimestamp();
+      await setDoc(reference, defaults, { merge: true });
+    }
+
+    return profileFromData(user, { ...stored, ...defaults });
     }
 
     export function isAdminUser(user: User, profile: UserProfile) {
