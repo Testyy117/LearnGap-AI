@@ -6,7 +6,7 @@
     import { signInWithEmailAndPassword } from "firebase/auth";
 
     import { auth } from "@/lib/firebase";
-import { initializeUserWorkspace } from "@/lib/user-workspace";
+    import { initializeUserWorkspace } from "@/lib/user-workspace";
     import { Button } from "@/components/ui/button";
     import {
     Card,
@@ -30,8 +30,13 @@ import { initializeUserWorkspace } from "@/lib/user-workspace";
       setLoading(true);
 
       try {
-        await signInWithEmailAndPassword(auth, email, password);
-        router.push("/dashboard");
+        const credential = await signInWithEmailAndPassword(auth, email, password);
+          try {
+            await initializeUserWorkspace(credential.user);
+          } catch (initializationError) {
+            console.warn("Workspace setup will retry after sign-in.", initializationError);
+          }
+        router.replace("/dashboard");
       } catch {
         setError("Invalid email or password.");
       } finally {
